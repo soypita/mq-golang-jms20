@@ -28,6 +28,9 @@ type ConsumerImpl struct {
 // a Destination, or immediately return a nil slice of Messages if there is no available
 // messages to be browse.
 func (consumer ConsumerImpl) BrowseAllNoWait() ([]jms20subset.Message, jms20subset.JMSException) {
+	if !consumer.browseMode {
+		return nil, jms20subset.CreateJMSException("consumer should be in browse mode", "", nil)
+	}
 	gmo := ibmmq.NewMQGMO()
 	return consumer.browseInternal(gmo)
 }
@@ -36,6 +39,10 @@ func (consumer ConsumerImpl) BrowseAllNoWait() ([]jms20subset.Message, jms20subs
 // waits for up to the specified number of milliseconds for at least one to become
 // available. A value of zero or less indicates to wait indefinitely.
 func (consumer ConsumerImpl) BrowseAll(waitMillis int32) ([]jms20subset.Message, jms20subset.JMSException) {
+	if !consumer.browseMode {
+		return nil, jms20subset.CreateJMSException("consumer should be in browse mode", "", nil)
+	}
+
 	if waitMillis <= 0 {
 		waitMillis = ibmmq.MQWI_UNLIMITED
 	}
@@ -52,6 +59,9 @@ func (consumer ConsumerImpl) BrowseAll(waitMillis int32) ([]jms20subset.Message,
 //
 // If no message is immediately available to be returned then a nil is returned.
 func (consumer ConsumerImpl) BrowseAllStringBodyNoWait() ([]*string, jms20subset.JMSException) {
+	if !consumer.browseMode {
+		return nil, jms20subset.CreateJMSException("consumer should be in browse mode", "", nil)
+	}
 
 	var resMessages []*string
 	var msgBodyStrPtr *string
@@ -85,6 +95,9 @@ func (consumer ConsumerImpl) BrowseAllStringBodyNoWait() ([]*string, jms20subset
 // If no message is available the method blocks up to the specified number
 // of milliseconds for one to become available.
 func (consumer ConsumerImpl) BrowseAllStringBody(waitMillis int32) ([]*string, jms20subset.JMSException) {
+	if !consumer.browseMode {
+		return nil, jms20subset.CreateJMSException("consumer should be in browse mode", "", nil)
+	}
 
 	var resMessages []*string
 	var msgBodyStrPtr *string
@@ -145,27 +158,26 @@ func (consumer ConsumerImpl) browseInternal(gmo *ibmmq.MQGMO) ([]jms20subset.Mes
 	var resultMessages []jms20subset.Message
 	var jmsErr jms20subset.JMSException
 
-	getmqmd := ibmmq.NewMQMD()
 	buffer := make([]byte, 32768)
-	browseOption := ibmmq.MQGMO_BROWSE_FIRST
-
-	// Set the GMO (get message options)
-	gmo.Options |= ibmmq.MQGMO_NO_SYNCPOINT
-	gmo.Options |= ibmmq.MQGMO_FAIL_IF_QUIESCING
-
-	// Apply the selector if one has been specified in the Consumer
-	err := applySelector(consumer.selector, getmqmd, gmo)
-	if err != nil {
-		jmsErr = jms20subset.CreateJMSException("ErrorParsingSelector", "ErrorParsingSelector", err)
-		return nil, jmsErr
-	}
 
 	msgAvail := true
 	var datalen int
+	var err error
+	isFirstRead := true
+	// Set the GMO (get message options)
+	gmo.Options |= ibmmq.MQGMO_NO_SYNCPOINT
+	gmo.Options |= ibmmq.MQGMO_FAIL_IF_QUIESCING
+	gmo.Options |= ibmmq.MQGMO_BROWSE_FIRST
 
 	for msgAvail == true && err == nil {
-		gmo.Options |= browseOption
+		getmqmd := ibmmq.NewMQMD()
 
+		// Apply the selector if one has been specified in the Consumer
+		err = applySelector(consumer.selector, getmqmd, gmo)
+		if err != nil {
+			jmsErr = jms20subset.CreateJMSException("ErrorParsingSelector", "ErrorParsingSelector", err)
+			return nil, jmsErr
+		}
 		// Now we can try to get the message. This operation returns
 		// a buffer that can be used directly.
 		buffer, datalen, err = consumer.qObject.GetSlice(getmqmd, gmo, buffer)
@@ -193,7 +205,12 @@ func (consumer ConsumerImpl) browseInternal(gmo *ibmmq.MQGMO) ([]jms20subset.Mes
 			}
 			resultMessages = append(resultMessages, msg)
 		}
-		browseOption = ibmmq.MQGMO_BROWSE_NEXT
+
+		if isFirstRead {
+			gmo.Options ^= ibmmq.MQGMO_BROWSE_FIRST
+			gmo.Options |= ibmmq.MQGMO_BROWSE_NEXT
+			isFirstRead = false
+		}
 	}
 
 	if err != nil {
