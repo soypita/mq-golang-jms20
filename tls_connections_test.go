@@ -219,5 +219,4 @@ func TestInvalidClientAuthValue(t *testing.T) {
 		assert.Equal(t, "MQRC_CD_ERROR", errCtx.GetReason())
 		assert.Equal(t, "2277", errCtx.GetErrorCode())
 	}
-
 }

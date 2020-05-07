@@ -1,0 +1,13 @@
+# docker-compose.yml
+version: '3.5'
+
+services:
+    mq-queue:
+        image: ibmcom/mq
+        ports:
+            - 1414:1414
+            - 9443:9443
+        environment:
+            LICENSE: accept
+            MQ_APP_PASSWORD: app
+            MQ_QMGR_NAME: QM1
