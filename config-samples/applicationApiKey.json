@@ -1,4 +1,5 @@
 {
-  "mqUsername":"username-here",
-  "apiKey":"password-here"
+  "mqUsername":"app",
+  "apiKey":"app"
 }
+
