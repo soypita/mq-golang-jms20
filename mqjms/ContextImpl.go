@@ -19,6 +19,7 @@ import (
 // connection to an IBM MQ queue manager.
 type ContextImpl struct {
 	qMgr ibmmq.MQQueueManager
+	browserMode bool
 }
 
 // CreateQueue implements the logic necessary to create a provider-specific
@@ -74,6 +75,11 @@ func (ctx ContextImpl) CreateConsumerWithSelector(dest jms20subset.Destination, 
 	var openOptions int32
 	openOptions = ibmmq.MQOO_FAIL_IF_QUIESCING
 	openOptions |= ibmmq.MQOO_INPUT_AS_Q_DEF
+
+	if ctx.browserMode {
+		openOptions |= ibmmq.MQOO_BROWSE
+	}
+
 	mqod.ObjectType = ibmmq.MQOT_Q
 	mqod.ObjectName = dest.GetDestinationName()
 
@@ -90,6 +96,7 @@ func (ctx ContextImpl) CreateConsumerWithSelector(dest jms20subset.Destination, 
 		consumer = ConsumerImpl{
 			qObject:  qObject,
 			selector: selector,
+			browseMode: ctx.browserMode,
 		}
 
 	} else {

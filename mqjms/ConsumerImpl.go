@@ -20,8 +20,96 @@ import (
 // ConsumerImpl defines a struct that contains the necessary objects for
 // receiving messages from a queue on an IBM MQ queue manager.
 type ConsumerImpl struct {
-	qObject  ibmmq.MQObject
-	selector string
+	qObject    ibmmq.MQObject
+	selector   string
+	browseMode bool
+}
+// BrowseAllNoWait implements the IBM MQ logic necessary to browse all messages from
+// a Destination, or immediately return a nil slice of Messages if there is no available
+// messages to be browse.
+func (consumer ConsumerImpl) BrowseAllNoWait() ([]jms20subset.Message, jms20subset.JMSException) {
+	gmo := ibmmq.NewMQGMO()
+	return consumer.browseInternal(gmo)
+}
+
+// BrowseAll(waitMillis) returns a slice of messages if at least one is available, or otherwise
+// waits for up to the specified number of milliseconds for at least one to become
+// available. A value of zero or less indicates to wait indefinitely.
+func (consumer ConsumerImpl) BrowseAll(waitMillis int32) ([]jms20subset.Message, jms20subset.JMSException) {
+	if waitMillis <= 0 {
+		waitMillis = ibmmq.MQWI_UNLIMITED
+	}
+
+	gmo := ibmmq.NewMQGMO()
+	gmo.Options |= ibmmq.MQGMO_WAIT
+	gmo.WaitInterval = waitMillis
+
+	return consumer.browseInternal(gmo)
+}
+
+// BrowseAllStringBodyNoWait implements the IBM MQ logic necessary to receive a
+// message from a Destination and return its body as a string.
+//
+// If no message is immediately available to be returned then a nil is returned.
+func (consumer ConsumerImpl) BrowseAllStringBodyNoWait() ([]*string, jms20subset.JMSException) {
+
+	var resMessages []*string
+	var msgBodyStrPtr *string
+	var jmsErr jms20subset.JMSException
+
+	// Get a message from the queue if one is available.
+	msg, jmsErr := consumer.BrowseAllNoWait()
+
+	// If we receive a message without any errors
+	if jmsErr == nil && msg != nil {
+		for _, rawMessage := range msg {
+			switch msg := rawMessage.(type) {
+			case jms20subset.TextMessage:
+				msgBodyStrPtr = msg.GetText()
+			default:
+				jmsErr = jms20subset.CreateJMSException(
+					"Received message is not a TextMessage", "MQJMS6068", nil)
+				// skip this message
+				continue
+			}
+			resMessages = append(resMessages, msgBodyStrPtr)
+		}
+	}
+
+	return resMessages, jmsErr
+}
+
+// BrowseAllStringBody implements the IBM MQ logic necessary to receive a
+// message from a Destination and return its body as a string.
+//
+// If no message is available the method blocks up to the specified number
+// of milliseconds for one to become available.
+func (consumer ConsumerImpl) BrowseAllStringBody(waitMillis int32) ([]*string, jms20subset.JMSException) {
+
+	var resMessages []*string
+	var msgBodyStrPtr *string
+	var jmsErr jms20subset.JMSException
+
+	// Get a message from the queue if one is available.
+	msg, jmsErr := consumer.BrowseAll(waitMillis)
+
+	// If we receive a message without any errors
+	if jmsErr == nil && msg != nil {
+		for _, rawMessage := range msg {
+			switch msg := rawMessage.(type) {
+			case jms20subset.TextMessage:
+				msgBodyStrPtr = msg.GetText()
+			default:
+				jmsErr = jms20subset.CreateJMSException(
+					"Received message is not a TextMessage", "MQJMS6068", nil)
+				// skip this message
+				continue
+			}
+			resMessages = append(resMessages, msgBodyStrPtr)
+		}
+	}
+
+	return resMessages, jmsErr
 }
 
 // ReceiveNoWait implements the IBM MQ logic necessary to receive a message from
@@ -49,6 +137,75 @@ func (consumer ConsumerImpl) Receive(waitMillis int32) (jms20subset.Message, jms
 
 	return consumer.receiveInternal(gmo)
 
+}
+
+func (consumer ConsumerImpl) browseInternal(gmo *ibmmq.MQGMO) ([]jms20subset.Message, jms20subset.JMSException) {
+	// Prepare objects to be used in receiving the message.
+	var msg jms20subset.Message
+	var resultMessages []jms20subset.Message
+	var jmsErr jms20subset.JMSException
+
+	getmqmd := ibmmq.NewMQMD()
+	buffer := make([]byte, 32768)
+	browseOption := ibmmq.MQGMO_BROWSE_FIRST
+
+	// Set the GMO (get message options)
+	gmo.Options |= ibmmq.MQGMO_NO_SYNCPOINT
+	gmo.Options |= ibmmq.MQGMO_FAIL_IF_QUIESCING
+
+	// Apply the selector if one has been specified in the Consumer
+	err := applySelector(consumer.selector, getmqmd, gmo)
+	if err != nil {
+		jmsErr = jms20subset.CreateJMSException("ErrorParsingSelector", "ErrorParsingSelector", err)
+		return nil, jmsErr
+	}
+
+	msgAvail := true
+	var datalen int
+
+	for msgAvail == true && err == nil {
+		gmo.Options |= browseOption
+
+		// Now we can try to get the message. This operation returns
+		// a buffer that can be used directly.
+		buffer, datalen, err = consumer.qObject.GetSlice(getmqmd, gmo, buffer)
+
+		if err != nil {
+			msgAvail = false
+			mqret := err.(*ibmmq.MQReturn)
+			if mqret.MQRC == ibmmq.MQRC_NO_MSG_AVAILABLE {
+				err = nil
+			}
+		} else {
+			// Message received successfully (without error).
+			// Currently we only support TextMessage, so extract the content of the
+			// message and populate it into a text string.
+			var msgBodyStr *string
+
+			if datalen > 0 {
+				strContent := strings.TrimSpace(string(buffer[:datalen]))
+				msgBodyStr = &strContent
+			}
+
+			msg = &TextMessageImpl{
+				bodyStr: msgBodyStr,
+				mqmd:    getmqmd,
+			}
+			resultMessages = append(resultMessages, msg)
+		}
+		browseOption = ibmmq.MQGMO_BROWSE_NEXT
+	}
+
+	if err != nil {
+		mqret := err.(*ibmmq.MQReturn)
+		rcInt := int(mqret.MQRC)
+		errCode := strconv.Itoa(rcInt)
+		reason := ibmmq.MQItoString("RC", rcInt)
+
+		jmsErr = jms20subset.CreateJMSException(reason, errCode, err)
+	}
+
+	return resultMessages, jmsErr
 }
 
 // Internal method to provide common functionality across the different types
@@ -146,7 +303,6 @@ func (consumer ConsumerImpl) ReceiveStringBodyNoWait() (*string, jms20subset.JMS
 	}
 
 	return msgBodyStrPtr, jmsErr
-
 }
 
 // ReceiveStringBody implements the IBM MQ logic necessary to receive a

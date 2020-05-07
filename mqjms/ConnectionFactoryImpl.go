@@ -29,6 +29,8 @@ type ConnectionFactoryImpl struct {
 	UserName    string
 	Password    string
 
+	ConsumerBrowseMode bool
+
 	TransportType int // Default to TransportType_CLIENT (0)
 
 	// Equivalent to SSLCipherSpec and SSLClientAuth in the MQI client, however
@@ -119,6 +121,7 @@ func (cf ConnectionFactoryImpl) CreateContext() (jms20subset.JMSContext, jms20su
 		// a new ContextImpl and return it to the caller.
 		ctx = ContextImpl{
 			qMgr: qMgr,
+			browserMode: cf.ConsumerBrowseMode,
 		}
 
 	} else {

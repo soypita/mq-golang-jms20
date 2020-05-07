@@ -18,6 +18,26 @@ package jms20subset
 // Java JMS receiveBody(Class<T>) method.
 type JMSConsumer interface {
 
+	// Collect all messages that available
+	// from queue in browse mode (without removing)
+	BrowseAllNoWait() ([]Message, JMSException)
+
+	// Collect all messages that available
+	// from queue with delay for every message
+	// in browse mode (without removing)
+	BrowseAll(waitMils int32) ([]Message, JMSException)
+
+	// Collect all messages that available
+	// from queue in browse mode (without removing)
+	// and gets its body as a string.
+	BrowseAllStringBodyNoWait() ([]*string, JMSException)
+
+	// Collect all messages that available
+	// from queue with delay for every message
+	// in browse mode (without removing)
+	// and gets its body as a string.
+	BrowseAllStringBody(waitMils int32) ([]*string, JMSException)
+
 	// ReceiveNoWait receives the next message if one is available, or nil if
 	// there is no message immediately available
 	ReceiveNoWait() (Message, JMSException)
