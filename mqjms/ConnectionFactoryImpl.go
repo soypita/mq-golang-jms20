@@ -10,9 +10,10 @@
 package mqjms
 
 import (
-	"github.com/ibm-messaging/mq-golang-jms20/jms20subset"
-	"github.com/ibm-messaging/mq-golang/ibmmq"
 	"strconv"
+
+	"github.com/ibm-messaging/mq-golang/ibmmq"
+	"github.com/soypita/mq-golang-jms20/jms20subset"
 )
 
 // ConnectionFactoryImpl defines a struct that contains attributes for
@@ -120,7 +121,7 @@ func (cf ConnectionFactoryImpl) CreateContext() (jms20subset.JMSContext, jms20su
 		// Connection was created successfully, so we wrap the MQI object into
 		// a new ContextImpl and return it to the caller.
 		ctx = ContextImpl{
-			qMgr: qMgr,
+			qMgr:        qMgr,
 			browserMode: cf.BrowseMode,
 		}
 

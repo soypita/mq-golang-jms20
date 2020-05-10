@@ -10,15 +10,16 @@
 package mqjms
 
 import (
-	"github.com/ibm-messaging/mq-golang-jms20/jms20subset"
-	"github.com/ibm-messaging/mq-golang/ibmmq"
 	"strconv"
+
+	"github.com/ibm-messaging/mq-golang/ibmmq"
+	"github.com/soypita/mq-golang-jms20/jms20subset"
 )
 
 // ContextImpl encapsulates the objects necessary to maintain an active
 // connection to an IBM MQ queue manager.
 type ContextImpl struct {
-	qMgr ibmmq.MQQueueManager
+	qMgr        ibmmq.MQQueueManager
 	browserMode bool
 }
 
@@ -94,8 +95,8 @@ func (ctx ContextImpl) CreateConsumerWithSelector(dest jms20subset.Destination, 
 		// Success - store the necessary objects away for later use to receive
 		// messages.
 		consumer = ConsumerImpl{
-			qObject:  qObject,
-			selector: selector,
+			qObject:    qObject,
+			selector:   selector,
 			browseMode: ctx.browserMode,
 		}
 

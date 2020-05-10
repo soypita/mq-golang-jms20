@@ -11,10 +11,11 @@ package mqjms
 
 import (
 	"errors"
-	"github.com/ibm-messaging/mq-golang-jms20/jms20subset"
-	"github.com/ibm-messaging/mq-golang/ibmmq"
 	"strconv"
 	"strings"
+
+	"github.com/ibm-messaging/mq-golang/ibmmq"
+	"github.com/soypita/mq-golang-jms20/jms20subset"
 )
 
 // ConsumerImpl defines a struct that contains the necessary objects for
@@ -24,6 +25,7 @@ type ConsumerImpl struct {
 	selector   string
 	browseMode bool
 }
+
 // BrowseAllNoWait implements the IBM MQ logic necessary to browse all messages from
 // a Destination, or immediately return a nil slice of Messages if there is no available
 // messages to be browse.

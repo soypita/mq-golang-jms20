@@ -11,9 +11,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/ibm-messaging/mq-golang-jms20/mqjms"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/soypita/mq-golang-jms20/mqjms"
+	"github.com/stretchr/testify/assert"
 )
 
 // This test file contains tests that demonstrate how to create TLS connections

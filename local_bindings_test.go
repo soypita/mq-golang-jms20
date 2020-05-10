@@ -11,10 +11,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/ibm-messaging/mq-golang-jms20/mqjms"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/soypita/mq-golang-jms20/mqjms"
+	"github.com/stretchr/testify/assert"
 )
 
 /*

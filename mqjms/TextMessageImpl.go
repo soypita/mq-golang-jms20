@@ -12,12 +12,13 @@ package mqjms
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ibm-messaging/mq-golang-jms20/jms20subset"
-	"github.com/ibm-messaging/mq-golang/ibmmq"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ibm-messaging/mq-golang/ibmmq"
+	"github.com/soypita/mq-golang-jms20/jms20subset"
 )
 
 // TextMessageImpl contains the IBM MQ specific attributes necessary to

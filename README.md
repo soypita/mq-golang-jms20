@@ -146,7 +146,7 @@ The IBM MQ client on which this library depends is supported on Linux and Window
   export GOPATH=/home/myuser/workspace
 
   # Clone this MQ JMS Golang repo into your local workspace
-  git clone https://github.com/ibm-messaging/mq-golang-jms20.git $GOPATH/src/github.com/ibm-messaging/mq-golang-jms20
+  git clone https://github.com/soypita/mq-golang-jms20.git $GOPATH/src/github.com/soypita/mq-golang-jms20
   ```
 5. Deploy an IBM MQ queue manager
     - If you have an existing queue manager then you can continue to use that
@@ -177,7 +177,7 @@ export CGO_LDFLAGS="-L$MQ_INSTALLATION_PATH/lib64 -Wl,-rpath,$MQ_INSTALLATION_PA
 
 Confirm the settings are correct by compiling the MQ JMS Golang package, for example as follows; (no errors will be shown if successful)
 ```bash
-cd $GOPATH/src/github.com/ibm-messaging/mq-golang-jms20/mqjms/
+cd $GOPATH/src/github.com/soypita/mq-golang-jms20/mqjms/
 go build
 ```
 
@@ -196,7 +196,7 @@ Once you have added the details of your queue manager and user credentials into 
 
 Note that the tests require the queues `DEV.QUEUE.1` and `DEV.QUEUE.2` to be defined on your queue manager, be empty of messages and be accessible to the application username you are using. This will be the case by default for queue managers provisioned through the MQ on Cloud service, but may require manual configuration for queue managers you have created through other means.
 ```bash
-> cd $GOPATH/src/github.com/ibm-messaging/mq-golang-jms20/
+> cd $GOPATH/src/github.com/soypita/mq-golang-jms20/
 > go test -v
 
 === RUN   TestLoadCFFromJSON
@@ -204,7 +204,7 @@ Note that the tests require the queues `DEV.QUEUE.1` and `DEV.QUEUE.2` to be def
 ...
 ...
 PASS
-ok  	github.com/ibm-messaging/mq-golang-jms20	11.308s
+ok  	github.com/soypita/mq-golang-jms20	11.308s
 ```
 
 
@@ -212,7 +212,7 @@ ok  	github.com/ibm-messaging/mq-golang-jms20	11.308s
 Writing your own application to talk to IBM MQ is simple - as shown in the [sample_sendreceive_test.go](sample_sendreceive_test.go) sample. Simply import this module into your source file, and get started!
 ```golang
 import (
-	"github.com/ibm-messaging/mq-golang-jms20/mqjms"
+	"github.com/soypita/mq-golang-jms20/mqjms"
 )
 ```
 
@@ -264,7 +264,7 @@ areas where the exact spelling has diverged a little from the Java form.
 
 
 ## Contributing
-We love to receive your input - if you find a bug, please [raise an Issue](https://github.com/ibm-messaging/mq-golang-jms20/issues). Even better, you can submit a Pull Request to fix the bug or contribute additional functionality to this module, such as implementing an additional piece of the JMS 2.0 specification into this Golang style client library.
+We love to receive your input - if you find a bug, please [raise an Issue](https://github.com/soypita/mq-golang-jms20/issues). Even better, you can submit a Pull Request to fix the bug or contribute additional functionality to this module, such as implementing an additional piece of the JMS 2.0 specification into this Golang style client library.
 
 Contributions to this package must be made under the terms of the IBM Contributor License Agreement, found in the [CLA file](CLA.md) of this repository. When submitting a pull request, you must include a statement stating you accept the terms in the CLA.
 
